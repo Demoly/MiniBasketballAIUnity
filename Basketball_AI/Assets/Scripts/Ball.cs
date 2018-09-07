@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AI;
 
 public class Ball : MonoBehaviour
 {
@@ -16,5 +17,16 @@ public class Ball : MonoBehaviour
 
     }
 
-    
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Player 1") || other.gameObject.CompareTag("Player 2"))
+        {
+            other.GetComponent<Player>().BallPossession = true;
+            //gameObject.GetComponent<NavMeshAgent>().isStopped = true;
+        }
+        else
+        {
+            //BallPossession = false;
+        }
+    }
 }

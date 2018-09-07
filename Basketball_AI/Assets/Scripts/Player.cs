@@ -1,28 +1,12 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.AI;
 
-public class Player : MonoBehaviour {
-    public Manager manager;
-
-    public double shootingAccuracy;
-    public GameObject nest;
-    public GameObject opponentNest;
-    public GameObject opponent;
-    public bool isPlayer1;
-
-    private NavMeshAgent agent;
-    private bool BallPossession;
-    private Vector3 initialPosition;
-    private Vector3 target;
+public class Player : BaseIA {
+    public double stealAccuracy = 0.5;
 
     private readonly Random random;
 
-    // Use this for initialization
-    void Start () {
-        agent = this.GetComponent<NavMeshAgent>();
-        initialPosition = transform.position;
-    }
-	
 	// Update is called once per frame
 	void Update () {
         if (BallPossession)
@@ -33,6 +17,12 @@ public class Player : MonoBehaviour {
         {
             if (opponent.GetComponent<Player>().BallPossession)
             {
+                if (!tryToSteal && transform.position.z >= opponent.transform.position.z - 1 && transform.position.z <= opponent.transform.position.z + 1
+                    && transform.position.x >= opponent.transform.position.x - 1 && transform.position.x <= opponent.transform.position.x + 1)
+                {
+                    trySteal();
+                }
+
                 defend();
             } else
             {
@@ -50,25 +40,48 @@ public class Player : MonoBehaviour {
         {
             trySteal();
         }
-
-        if (other.gameObject.CompareTag("Ball"))
-        {
-            BallPossession = true;
-        } else
-        {
-            BallPossession = false;
-        }
     }
 
     void tryShoot()
     {
-        if(Random.Range(0.0f , 1.0f) <= shootingAccuracy)
-        manager.setScore(isPlayer1);
+        if (Random.Range(0.0f , 1.0f) <= shootingAccuracy)
+        {
+            manager.setScore(isPlayer1);
+        } else if (isPlayer1)
+        {
+            //manager.ballAgent.SetDestination(new Vector3(-6, 0.5f, Random.Range(-9.0f, 9.0f)));
+            manager.ball.transform.position = new Vector3(-6, 0.5f, Random.Range(-10.0f, 10.0f));
+            BallPossession = false;
+        } else
+        {
+            //manager.ballAgent.SetDestination(new Vector3(6, 0.5f, Random.Range(-9.0f, 9.0f)));
+            manager.ball.transform.position = new Vector3(6, 0.5f, Random.Range(-10.0f, 10.0f));
+            BallPossession = false;
+        }
     }
 
     void trySteal()
     {
+        if (Random.Range(0.0f, 1.0f) <= shootingAccuracy)
+        {
+            manager.ball.transform.position = transform.position;
+            opponent.GetComponent<Player>().BallPossession = false;
 
+            opponent.GetComponent<Player>().tryToSteal = true;
+            opponent.GetComponent<Player>().StartCoroutine("enumeratorSteal");
+
+            BallPossession = true;
+
+        }
+        tryToSteal = true;
+        StartCoroutine("enumeratorSteal");
+    }
+
+    IEnumerator enumeratorSteal()
+    {
+        // suspend execution for 3 seconds
+        yield return new WaitForSeconds(3);
+        tryToSteal = false;
     }
 
     void defend()
@@ -83,11 +96,5 @@ public class Player : MonoBehaviour {
         }
 
         agent.SetDestination(target);
-    }
-
-    public void Reset()
-    {
-        BallPossession = false;
-        transform.position = initialPosition;
     }
 }
